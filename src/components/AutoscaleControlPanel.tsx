@@ -1,13 +1,15 @@
+
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Save, Settings, Cloud, MapPin, Database, Layers } from 'lucide-react';
+import { Save, Settings, Cloud, MapPin, Database, Layers, ChevronDown, ChevronUp } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { FilterPanel } from './FilterPanel';
 import { SchedulePanel } from './SchedulePanel';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface ClusterData {
   id: string;
@@ -79,6 +81,9 @@ export function AutoscaleControlPanel() {
     status: 'all',
     autoscaleEnabled: 'all'
   });
+
+  const [isScheduleOpen, setIsScheduleOpen] = useState(false);
+  const [isControlOpen, setIsControlOpen] = useState(false);
 
   const handleAutoscaleToggle = (clusterId: string) => {
     setClusters(prev => prev.map(cluster => 
@@ -164,146 +169,26 @@ export function AutoscaleControlPanel() {
   const uniqueProjects = [...new Set(clusters.map(c => c.project))];
   const uniqueLocations = [...new Set(clusters.map(c => c.location))];
 
+  // Estatísticas
+  const totalClusters = clusters.length;
+  const activeClusters = clusters.filter(c => c.status === 'running').length;
+  const totalNodes = clusters.reduce((sum, cluster) => sum + cluster.currentNodes, 0);
+  const autoscaleEnabled = clusters.filter(c => c.autoscaleEnabled).length;
+
   return (
     <div className="space-y-6">
-      <FilterPanel
-        filters={filters}
-        onFiltersChange={setFilters}
-        projects={uniqueProjects}
-        locations={uniqueLocations}
-      />
-      
-      <SchedulePanel 
-        clusters={clusters.map(c => ({ id: c.id, cluster: c.cluster, project: c.project }))}
-      />
-
-      <Card className="shadow-lg border-0 bg-white">
-        <CardHeader className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-t-lg">
-          <CardTitle className="flex items-center gap-2 text-xl">
-            <Settings className="w-6 h-6" />
-            Controle de Autoscale dos Clusters
-            <Badge variant="secondary" className="bg-white/20 text-white">
-              {filteredClusters.length} de {clusters.length}
-            </Badge>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b">
-                <tr>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 flex items-center gap-2">
-                    <Cloud className="w-4 h-4" />
-                    Projeto
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
-                    <div className="flex items-center gap-2">
-                      <MapPin className="w-4 h-4" />
-                      Localização
-                    </div>
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
-                    <div className="flex items-center gap-2">
-                      <Database className="w-4 h-4" />
-                      Cluster
-                    </div>
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
-                    <div className="flex items-center gap-2">
-                      <Layers className="w-4 h-4" />
-                      Node Pool
-                    </div>
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Status</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Nodes Atuais</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Autoscale</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Min Nodes</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Max Nodes</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Ações</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {filteredClusters.map((cluster) => (
-                  <tr key={cluster.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4 text-sm text-gray-900 font-mono">
-                      {cluster.project}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
-                      {cluster.location}
-                    </td>
-                    <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                      {cluster.cluster}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
-                      {cluster.nodePool}
-                    </td>
-                    <td className="px-6 py-4">
-                      {getStatusBadge(cluster.status)}
-                    </td>
-                    <td className="px-6 py-4 text-sm font-semibold text-blue-600">
-                      {cluster.currentNodes}
-                    </td>
-                    <td className="px-6 py-4">
-                      <Switch
-                        checked={cluster.autoscaleEnabled}
-                        onCheckedChange={() => handleAutoscaleToggle(cluster.id)}
-                        className="data-[state=checked]:bg-blue-600"
-                      />
-                    </td>
-                    <td className="px-6 py-4">
-                      <Input
-                        type="number"
-                        value={cluster.minNodes}
-                        onChange={(e) => handleMinNodesChange(cluster.id, e.target.value)}
-                        className="w-20 text-center"
-                        min="0"
-                        disabled={!cluster.autoscaleEnabled}
-                      />
-                    </td>
-                    <td className="px-6 py-4">
-                      <Input
-                        type="number"
-                        value={cluster.maxNodes}
-                        onChange={(e) => handleMaxNodesChange(cluster.id, e.target.value)}
-                        className="w-20 text-center"
-                        min="1"
-                        disabled={!cluster.autoscaleEnabled}
-                      />
-                    </td>
-                    <td className="px-6 py-4">
-                      <Button
-                        size="sm"
-                        onClick={() => handleSaveChanges(cluster.id)}
-                        className="bg-blue-600 hover:bg-blue-700 text-white"
-                        disabled={!cluster.autoscaleEnabled}
-                      >
-                        <Save className="w-4 h-4 mr-1" />
-                        Salvar
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          
-          {filteredClusters.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-gray-500 text-lg">Nenhum cluster encontrado com os filtros aplicados</p>
-              <p className="text-gray-400 text-sm mt-2">Tente ajustar os filtros ou limpar a busca</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-      
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* Cards de informações no topo */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="border-l-4 border-l-green-500">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Clusters Ativos</p>
                 <p className="text-2xl font-bold text-green-600">
-                  {filteredClusters.filter(c => c.status === 'running').length}
+                  {activeClusters} / {totalClusters}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {uniqueProjects.length} projetos
                 </p>
               </div>
               <Database className="w-8 h-8 text-green-500" />
@@ -316,8 +201,9 @@ export function AutoscaleControlPanel() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Total de Nodes</p>
-                <p className="text-2xl font-bold text-blue-600">
-                  {filteredClusters.reduce((sum, cluster) => sum + cluster.currentNodes, 0)}
+                <p className="text-2xl font-bold text-blue-600">{totalNodes}</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {uniqueLocations.length} regiões
                 </p>
               </div>
               <Layers className="w-8 h-8 text-blue-500" />
@@ -331,14 +217,192 @@ export function AutoscaleControlPanel() {
               <div>
                 <p className="text-sm text-gray-600">Autoscale Ativo</p>
                 <p className="text-2xl font-bold text-purple-600">
-                  {filteredClusters.filter(c => c.autoscaleEnabled).length}
+                  {autoscaleEnabled} / {totalClusters}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {Math.round((autoscaleEnabled / totalClusters) * 100)}% dos clusters
                 </p>
               </div>
               <Settings className="w-8 h-8 text-purple-500" />
             </div>
           </CardContent>
         </Card>
+
+        <Card className="border-l-4 border-l-orange-500">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Status da Infraestrutura</p>
+                <p className="text-2xl font-bold text-orange-600">
+                  {clusters.filter(c => c.status === 'updating').length > 0 ? 'Atualizando' : 'Estável'}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {clusters.filter(c => c.status === 'error').length} erros
+                </p>
+              </div>
+              <Cloud className="w-8 h-8 text-orange-500" />
+            </div>
+          </CardContent>
+        </Card>
       </div>
+
+      <FilterPanel
+        filters={filters}
+        onFiltersChange={setFilters}
+        projects={uniqueProjects}
+        locations={uniqueLocations}
+      />
+      
+      {/* Seção de Agendamento */}
+      <Collapsible open={isScheduleOpen} onOpenChange={setIsScheduleOpen}>
+        <Card className="shadow-sm border-gray-200">
+          <CollapsibleTrigger asChild>
+            <CardHeader className="cursor-pointer hover:bg-gray-50 transition-colors">
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Settings className="w-5 h-5 text-purple-600" />
+                  Agendamento de Autoscale
+                </CardTitle>
+                {isScheduleOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+              </div>
+            </CardHeader>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <CardContent className="pt-0">
+              <SchedulePanel clusters={clusters} />
+            </CardContent>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
+
+      {/* Seção de Controle */}
+      <Collapsible open={isControlOpen} onOpenChange={setIsControlOpen}>
+        <Card className="shadow-lg border-0 bg-white">
+          <CollapsibleTrigger asChild>
+            <CardHeader className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-t-lg cursor-pointer hover:from-blue-700 hover:to-indigo-700 transition-colors">
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2 text-xl">
+                  <Settings className="w-6 h-6" />
+                  Controle de Autoscale dos Clusters
+                  <Badge variant="secondary" className="bg-white/20 text-white">
+                    {filteredClusters.length} de {clusters.length}
+                  </Badge>
+                </CardTitle>
+                {isControlOpen ? <ChevronUp className="w-6 h-6" /> : <ChevronDown className="w-6 h-6" />}
+              </div>
+            </CardHeader>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50 border-b">
+                    <tr>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 flex items-center gap-2">
+                        <Cloud className="w-4 h-4" />
+                        Projeto
+                      </th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+                        <div className="flex items-center gap-2">
+                          <MapPin className="w-4 h-4" />
+                          Localização
+                        </div>
+                      </th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+                        <div className="flex items-center gap-2">
+                          <Database className="w-4 h-4" />
+                          Cluster
+                        </div>
+                      </th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+                        <div className="flex items-center gap-2">
+                          <Layers className="w-4 h-4" />
+                          Node Pool
+                        </div>
+                      </th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Status</th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Nodes Atuais</th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Autoscale</th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Min Nodes</th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Max Nodes</th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {filteredClusters.map((cluster) => (
+                      <tr key={cluster.id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-6 py-4 text-sm text-gray-900 font-mono">
+                          {cluster.project}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-600">
+                          {cluster.location}
+                        </td>
+                        <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                          {cluster.cluster}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-600">
+                          {cluster.nodePool}
+                        </td>
+                        <td className="px-6 py-4">
+                          {getStatusBadge(cluster.status)}
+                        </td>
+                        <td className="px-6 py-4 text-sm font-semibold text-blue-600">
+                          {cluster.currentNodes}
+                        </td>
+                        <td className="px-6 py-4">
+                          <Switch
+                            checked={cluster.autoscaleEnabled}
+                            onCheckedChange={() => handleAutoscaleToggle(cluster.id)}
+                            className="data-[state=checked]:bg-blue-600"
+                          />
+                        </td>
+                        <td className="px-6 py-4">
+                          <Input
+                            type="number"
+                            value={cluster.minNodes}
+                            onChange={(e) => handleMinNodesChange(cluster.id, e.target.value)}
+                            className="w-20 text-center"
+                            min="0"
+                            disabled={!cluster.autoscaleEnabled}
+                          />
+                        </td>
+                        <td className="px-6 py-4">
+                          <Input
+                            type="number"
+                            value={cluster.maxNodes}
+                            onChange={(e) => handleMaxNodesChange(cluster.id, e.target.value)}
+                            className="w-20 text-center"
+                            min="1"
+                            disabled={!cluster.autoscaleEnabled}
+                          />
+                        </td>
+                        <td className="px-6 py-4">
+                          <Button
+                            size="sm"
+                            onClick={() => handleSaveChanges(cluster.id)}
+                            className="bg-blue-600 hover:bg-blue-700 text-white"
+                            disabled={!cluster.autoscaleEnabled}
+                          >
+                            <Save className="w-4 h-4 mr-1" />
+                            Salvar
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              
+              {filteredClusters.length === 0 && (
+                <div className="text-center py-12">
+                  <p className="text-gray-500 text-lg">Nenhum cluster encontrado com os filtros aplicados</p>
+                  <p className="text-gray-400 text-sm mt-2">Tente ajustar os filtros ou limpar a busca</p>
+                </div>
+              )}
+            </CardContent>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
     </div>
   );
 }
