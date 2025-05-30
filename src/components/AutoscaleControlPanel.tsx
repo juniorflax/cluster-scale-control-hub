@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
@@ -7,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Save, Settings, Cloud, MapPin, Database, Layers } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { FilterPanel } from './FilterPanel';
+import { SchedulePanel } from './SchedulePanel';
 
 interface ClusterData {
   id: string;
@@ -19,6 +20,14 @@ interface ClusterData {
   maxNodes: number;
   currentNodes: number;
   status: 'running' | 'updating' | 'error';
+}
+
+interface FilterState {
+  search: string;
+  project: string;
+  location: string;
+  status: string;
+  autoscaleEnabled: string;
 }
 
 export function AutoscaleControlPanel() {
@@ -62,6 +71,14 @@ export function AutoscaleControlPanel() {
       status: 'updating'
     }
   ]);
+
+  const [filters, setFilters] = useState<FilterState>({
+    search: '',
+    project: '',
+    location: '',
+    status: '',
+    autoscaleEnabled: ''
+  });
 
   const handleAutoscaleToggle = (clusterId: string) => {
     setClusters(prev => prev.map(cluster => 
@@ -126,13 +143,48 @@ export function AutoscaleControlPanel() {
     );
   };
 
+  // Função para filtrar clusters
+  const filteredClusters = clusters.filter(cluster => {
+    const matchesSearch = !filters.search || 
+      cluster.cluster.toLowerCase().includes(filters.search.toLowerCase()) ||
+      cluster.project.toLowerCase().includes(filters.search.toLowerCase()) ||
+      cluster.nodePool.toLowerCase().includes(filters.search.toLowerCase());
+    
+    const matchesProject = !filters.project || cluster.project === filters.project;
+    const matchesLocation = !filters.location || cluster.location === filters.location;
+    const matchesStatus = !filters.status || cluster.status === filters.status;
+    const matchesAutoscale = !filters.autoscaleEnabled || 
+      (filters.autoscaleEnabled === 'enabled' && cluster.autoscaleEnabled) ||
+      (filters.autoscaleEnabled === 'disabled' && !cluster.autoscaleEnabled);
+
+    return matchesSearch && matchesProject && matchesLocation && matchesStatus && matchesAutoscale;
+  });
+
+  // Extrair valores únicos para os filtros
+  const uniqueProjects = [...new Set(clusters.map(c => c.project))];
+  const uniqueLocations = [...new Set(clusters.map(c => c.location))];
+
   return (
     <div className="space-y-6">
+      <FilterPanel
+        filters={filters}
+        onFiltersChange={setFilters}
+        projects={uniqueProjects}
+        locations={uniqueLocations}
+      />
+      
+      <SchedulePanel 
+        clusters={clusters.map(c => ({ id: c.id, cluster: c.cluster, project: c.project }))}
+      />
+
       <Card className="shadow-lg border-0 bg-white">
         <CardHeader className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-t-lg">
           <CardTitle className="flex items-center gap-2 text-xl">
             <Settings className="w-6 h-6" />
             Controle de Autoscale dos Clusters
+            <Badge variant="secondary" className="bg-white/20 text-white">
+              {filteredClusters.length} de {clusters.length}
+            </Badge>
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
@@ -171,7 +223,7 @@ export function AutoscaleControlPanel() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {clusters.map((cluster) => (
+                {filteredClusters.map((cluster) => (
                   <tr key={cluster.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4 text-sm text-gray-900 font-mono">
                       {cluster.project}
@@ -234,6 +286,13 @@ export function AutoscaleControlPanel() {
               </tbody>
             </table>
           </div>
+          
+          {filteredClusters.length === 0 && (
+            <div className="text-center py-12">
+              <p className="text-gray-500 text-lg">Nenhum cluster encontrado com os filtros aplicados</p>
+              <p className="text-gray-400 text-sm mt-2">Tente ajustar os filtros ou limpar a busca</p>
+            </div>
+          )}
         </CardContent>
       </Card>
       
@@ -244,7 +303,7 @@ export function AutoscaleControlPanel() {
               <div>
                 <p className="text-sm text-gray-600">Clusters Ativos</p>
                 <p className="text-2xl font-bold text-green-600">
-                  {clusters.filter(c => c.status === 'running').length}
+                  {filteredClusters.filter(c => c.status === 'running').length}
                 </p>
               </div>
               <Database className="w-8 h-8 text-green-500" />
@@ -258,7 +317,7 @@ export function AutoscaleControlPanel() {
               <div>
                 <p className="text-sm text-gray-600">Total de Nodes</p>
                 <p className="text-2xl font-bold text-blue-600">
-                  {clusters.reduce((sum, cluster) => sum + cluster.currentNodes, 0)}
+                  {filteredClusters.reduce((sum, cluster) => sum + cluster.currentNodes, 0)}
                 </p>
               </div>
               <Layers className="w-8 h-8 text-blue-500" />
@@ -272,7 +331,7 @@ export function AutoscaleControlPanel() {
               <div>
                 <p className="text-sm text-gray-600">Autoscale Ativo</p>
                 <p className="text-2xl font-bold text-purple-600">
-                  {clusters.filter(c => c.autoscaleEnabled).length}
+                  {filteredClusters.filter(c => c.autoscaleEnabled).length}
                 </p>
               </div>
               <Settings className="w-8 h-8 text-purple-500" />
