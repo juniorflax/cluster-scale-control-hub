@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Filter, X, Search } from 'lucide-react';
+import { Filter, X, Search, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface FilterState {
   search: string;
@@ -44,101 +44,115 @@ export function FilterPanel({ filters, onFiltersChange, projects, locations }: F
   };
 
   return (
-    <Card className="mb-6 shadow-sm border-gray-200">
-      <CardHeader className="pb-3">
+    <Card className="mb-8 glass-effect border-border/50 shadow-xl">
+      <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Filter className="w-5 h-5 text-blue-600" />
-            Filtros
+          <CardTitle className="flex items-center gap-3 text-xl">
+            <div className="p-2 bg-primary/20 rounded-lg">
+              <Filter className="w-5 h-5 text-primary" />
+            </div>
+            <span className="text-gradient">Filtros Avançados</span>
             {getActiveFiltersCount() > 0 && (
-              <Badge variant="secondary" className="bg-blue-100 text-blue-700">
-                {getActiveFiltersCount()}
+              <Badge variant="secondary" className="bg-primary/20 text-primary border-primary/30 animate-pulse">
+                {getActiveFiltersCount()} ativo{getActiveFiltersCount() > 1 ? 's' : ''}
               </Badge>
             )}
           </CardTitle>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             {getActiveFiltersCount() > 0 && (
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={clearFilters}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
               >
-                <X className="w-4 h-4 mr-1" />
-                Limpar
+                <X className="w-4 h-4 mr-2" />
+                Limpar Filtros
               </Button>
             )}
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setIsExpanded(!isExpanded)}
-              className="text-blue-600 hover:text-blue-700"
+              className="text-primary hover:text-primary/80 hover:bg-primary/10 transition-colors"
             >
-              {isExpanded ? 'Recolher' : 'Expandir'}
+              {isExpanded ? (
+                <>
+                  <ChevronUp className="w-4 h-4 mr-2" />
+                  Recolher
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="w-4 h-4 mr-2" />
+                  Expandir
+                </>
+              )}
             </Button>
           </div>
         </div>
       </CardHeader>
       
-      <CardContent className="pt-0">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+      <CardContent className="pt-0 space-y-6">
+        {/* Primary filters - always visible */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="relative group">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4 group-hover:text-primary transition-colors" />
             <Input
-              placeholder="Buscar clusters..."
+              placeholder="Buscar clusters, projetos..."
               value={filters.search}
               onChange={(e) => updateFilter('search', e.target.value)}
-              className="pl-10"
+              className="pl-10 bg-muted/30 border-border/50 focus:border-primary/50 focus:bg-muted/50 transition-all"
             />
           </div>
           
           <Select value={filters.project} onValueChange={(value) => updateFilter('project', value)}>
-            <SelectTrigger>
+            <SelectTrigger className="bg-muted/30 border-border/50 focus:border-primary/50 hover:bg-muted/50 transition-all">
               <SelectValue placeholder="Selecionar projeto" />
             </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos os projetos</SelectItem>
+            <SelectContent className="bg-card/95 backdrop-blur-xl border-border/50">
+              <SelectItem value="all">🏢 Todos os projetos</SelectItem>
               {projects.map((project) => (
-                <SelectItem key={project} value={project}>{project}</SelectItem>
+                <SelectItem key={project} value={project}>📁 {project}</SelectItem>
               ))}
             </SelectContent>
           </Select>
 
           <Select value={filters.location} onValueChange={(value) => updateFilter('location', value)}>
-            <SelectTrigger>
+            <SelectTrigger className="bg-muted/30 border-border/50 focus:border-primary/50 hover:bg-muted/50 transition-all">
               <SelectValue placeholder="Selecionar localização" />
             </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todas as localizações</SelectItem>
+            <SelectContent className="bg-card/95 backdrop-blur-xl border-border/50">
+              <SelectItem value="all">🌍 Todas as localizações</SelectItem>
               {locations.map((location) => (
-                <SelectItem key={location} value={location}>{location}</SelectItem>
+                <SelectItem key={location} value={location}>📍 {location}</SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
 
+        {/* Secondary filters - expandable */}
         {isExpanded && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-gray-200">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-border/30 animate-accordion-down">
             <Select value={filters.status} onValueChange={(value) => updateFilter('status', value)}>
-              <SelectTrigger>
+              <SelectTrigger className="bg-muted/30 border-border/50 focus:border-primary/50 hover:bg-muted/50 transition-all">
                 <SelectValue placeholder="Status do cluster" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os status</SelectItem>
-                <SelectItem value="running">Executando</SelectItem>
-                <SelectItem value="updating">Atualizando</SelectItem>
-                <SelectItem value="error">Erro</SelectItem>
+              <SelectContent className="bg-card/95 backdrop-blur-xl border-border/50">
+                <SelectItem value="all">📊 Todos os status</SelectItem>
+                <SelectItem value="running">✅ Executando</SelectItem>
+                <SelectItem value="updating">🔄 Atualizando</SelectItem>
+                <SelectItem value="error">❌ Erro</SelectItem>
               </SelectContent>
             </Select>
 
             <Select value={filters.autoscaleEnabled} onValueChange={(value) => updateFilter('autoscaleEnabled', value)}>
-              <SelectTrigger>
+              <SelectTrigger className="bg-muted/30 border-border/50 focus:border-primary/50 hover:bg-muted/50 transition-all">
                 <SelectValue placeholder="Status do autoscale" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="enabled">Autoscale ativo</SelectItem>
-                <SelectItem value="disabled">Autoscale inativo</SelectItem>
+              <SelectContent className="bg-card/95 backdrop-blur-xl border-border/50">
+                <SelectItem value="all">⚙️ Todos</SelectItem>
+                <SelectItem value="enabled">🚀 Autoscale ativo</SelectItem>
+                <SelectItem value="disabled">⏸️ Autoscale inativo</SelectItem>
               </SelectContent>
             </Select>
           </div>
