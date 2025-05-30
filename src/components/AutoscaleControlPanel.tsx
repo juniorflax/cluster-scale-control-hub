@@ -74,10 +74,10 @@ export function AutoscaleControlPanel() {
 
   const [filters, setFilters] = useState<FilterState>({
     search: '',
-    project: '',
-    location: '',
-    status: '',
-    autoscaleEnabled: ''
+    project: 'all',
+    location: 'all',
+    status: 'all',
+    autoscaleEnabled: 'all'
   });
 
   const handleAutoscaleToggle = (clusterId: string) => {
@@ -150,10 +150,10 @@ export function AutoscaleControlPanel() {
       cluster.project.toLowerCase().includes(filters.search.toLowerCase()) ||
       cluster.nodePool.toLowerCase().includes(filters.search.toLowerCase());
     
-    const matchesProject = !filters.project || cluster.project === filters.project;
-    const matchesLocation = !filters.location || cluster.location === filters.location;
-    const matchesStatus = !filters.status || cluster.status === filters.status;
-    const matchesAutoscale = !filters.autoscaleEnabled || 
+    const matchesProject = filters.project === 'all' || cluster.project === filters.project;
+    const matchesLocation = filters.location === 'all' || cluster.location === filters.location;
+    const matchesStatus = filters.status === 'all' || cluster.status === filters.status;
+    const matchesAutoscale = filters.autoscaleEnabled === 'all' || 
       (filters.autoscaleEnabled === 'enabled' && cluster.autoscaleEnabled) ||
       (filters.autoscaleEnabled === 'disabled' && !cluster.autoscaleEnabled);
 

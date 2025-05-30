@@ -32,15 +32,15 @@ export function FilterPanel({ filters, onFiltersChange, projects, locations }: F
   const clearFilters = () => {
     onFiltersChange({
       search: '',
-      project: '',
-      location: '',
-      status: '',
-      autoscaleEnabled: ''
+      project: 'all',
+      location: 'all',
+      status: 'all',
+      autoscaleEnabled: 'all'
     });
   };
 
   const getActiveFiltersCount = () => {
-    return Object.values(filters).filter(value => value !== '').length;
+    return Object.values(filters).filter(value => value !== '' && value !== 'all').length;
   };
 
   return (
@@ -97,7 +97,7 @@ export function FilterPanel({ filters, onFiltersChange, projects, locations }: F
               <SelectValue placeholder="Selecionar projeto" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todos os projetos</SelectItem>
+              <SelectItem value="all">Todos os projetos</SelectItem>
               {projects.map((project) => (
                 <SelectItem key={project} value={project}>{project}</SelectItem>
               ))}
@@ -109,7 +109,7 @@ export function FilterPanel({ filters, onFiltersChange, projects, locations }: F
               <SelectValue placeholder="Selecionar localização" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todas as localizações</SelectItem>
+              <SelectItem value="all">Todas as localizações</SelectItem>
               {locations.map((location) => (
                 <SelectItem key={location} value={location}>{location}</SelectItem>
               ))}
@@ -124,7 +124,7 @@ export function FilterPanel({ filters, onFiltersChange, projects, locations }: F
                 <SelectValue placeholder="Status do cluster" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos os status</SelectItem>
+                <SelectItem value="all">Todos os status</SelectItem>
                 <SelectItem value="running">Executando</SelectItem>
                 <SelectItem value="updating">Atualizando</SelectItem>
                 <SelectItem value="error">Erro</SelectItem>
@@ -136,7 +136,7 @@ export function FilterPanel({ filters, onFiltersChange, projects, locations }: F
                 <SelectValue placeholder="Status do autoscale" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos</SelectItem>
+                <SelectItem value="all">Todos</SelectItem>
                 <SelectItem value="enabled">Autoscale ativo</SelectItem>
                 <SelectItem value="disabled">Autoscale inativo</SelectItem>
               </SelectContent>
